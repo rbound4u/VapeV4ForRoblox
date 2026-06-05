@@ -1,3 +1,4 @@
+-- Prison Life
 local run = function(func)
 	func()
 end
@@ -35,17 +36,17 @@ local pl = {}
 local Spring = {}
 local TracerHook = {Hooks = {}}
 local oldshoot
-local aimTimer, shootTimer, aimVec = os.clock(), os.clock()
+local aimTimer, shootTimer, aimVec = os.clock(), os.clock(), Vector3.zero
 
 local function canClick()
 	local mousepos = (inputService:GetMouseLocation() - guiService:GetGuiInset())
-	for _, v in lplr.PlayerGui:GetGuiObjectsAtPosition(mousepos.X, mousepos.Y) do
+	for _, v in ipairs(lplr.PlayerGui:GetGuiObjectsAtPosition(mousepos.X, mousepos.Y)) do
 		local obj = v:FindFirstAncestorOfClass('ScreenGui')
 		if v.Active and v.Visible and obj and obj.Enabled then
 			return false
 		end
 	end
-	for _, v in coreGui:GetGuiObjectsAtPosition(mousepos.X, mousepos.Y) do
+	for _, v in ipairs(coreGui:GetGuiObjectsAtPosition(mousepos.X, mousepos.Y)) do
 		local obj = v:FindFirstAncestorOfClass('ScreenGui')
 		if v.Active and v.Visible and obj and obj.Enabled then
 			return false
@@ -56,17 +57,17 @@ end
 
 local function isFriend(plr, recolor)
 	if vape.Categories.Friends.Options['Use friends'].Enabled then
-		local friend = table.find(vape.Categories.Friends.ListEnabled, plr.Name) and true
+		local friend = table.find(vape.Categories.Friends.ListEnabled, plr.Name) ~= nil
 		if recolor then
 			friend = friend and vape.Categories.Friends.Options['Recolor visuals'].Enabled
 		end
 		return friend
 	end
-	return nil
+	return false
 end
 
 local function isTarget(plr)
-	return table.find(vape.Categories.Targets.ListEnabled, plr.Name) and true
+	return table.find(vape.Categories.Targets.ListEnabled, plr.Name) ~= nil
 end
 
 local function notif(...)
@@ -89,49 +90,32 @@ run(function()
 	OriginScanner.Ray = rayParams
 
 	local positions = {
-		Vector3.new(0, 1, 0),
-		Vector3.new(1, 0, 0),
-		Vector3.new(0.7, -0.5, -0.5),
-		Vector3.new(-0.1, -0.8, -0.8),
-		Vector3.new(-0.8, -0.5, -0.5),
-		Vector3.new(-1, 0, 0),
-		Vector3.new(-0.8, 0.4, 0.4),
-		Vector3.new(0, 0.7, 0.7),
-		Vector3.new(0.7, 0.5, 0.5),
-		Vector3.new(1, 0, 0),
-		Vector3.new(0.7, 0, -0.8),
-		Vector3.new(-0.1, 0, -1),
-		Vector3.new(-0.8, 0, -0.8),
-		Vector3.new(-1, 0, 0),
-		Vector3.new(-0.8, 0, 0.7),
-		Vector3.new(0, 0, 1),
-		Vector3.new(0.7, 0, 0.7),
-		Vector3.new(1, 0, 0),
-		Vector3.new(0.7, 0.4, -0.5),
-		Vector3.new(-0.1, 0.7, -0.8),
-		Vector3.new(-0.8, 0.4, -0.5),
-		Vector3.new(-1, -0.1, 0),
-		Vector3.new(-0.8, -0.5, 0.4),
-		Vector3.new(0, -0.8, 0.7),
-		Vector3.new(0.7, -0.6, 0.5),
-		Vector3.new(0, -1, 0)
+		Vector3.new(0, 1, 0), Vector3.new(1, 0, 0), Vector3.new(0.7, -0.5, -0.5),
+		Vector3.new(-0.1, -0.8, -0.8), Vector3.new(-0.8, -0.5, -0.5), Vector3.new(-1, 0, 0),
+		Vector3.new(-0.8, 0.4, 0.4), Vector3.new(0, 0.7, 0.7), Vector3.new(0.7, 0.5, 0.5),
+		Vector3.new(1, 0, 0), Vector3.new(0.7, 0, -0.8), Vector3.new(-0.1, 0, -1),
+		Vector3.new(-0.8, 0, -0.8), Vector3.new(-1, 0, 0), Vector3.new(-0.8, 0, 0.7),
+		Vector3.new(0, 0, 1), Vector3.new(0.7, 0, 0.7), Vector3.new(1, 0, 0),
+		Vector3.new(0.7, 0.4, -0.5), Vector3.new(-0.1, 0.7, -0.8), Vector3.new(-0.8, 0.4, -0.5),
+		Vector3.new(-1, -0.1, 0), Vector3.new(-0.8, -0.5, 0.4), Vector3.new(0, -0.8, 0.7),
+		Vector3.new(0.7, -0.6, 0.5), Vector3.new(0, -1, 0)
 	}
 
 	function OriginScanner:Scan(origin, target, ...)
 		local scanPositions = {}
-		for _, v in {...} do
+		for _, v in ipairs({...}) do
 			if (origin - v).Magnitude < 7.5 then
 				table.insert(scanPositions, v)
 			end
 		end
 
 		for i = 5, 7 do
-			for _, v in positions do
+			for _, v in ipairs(positions) do
 				table.insert(scanPositions, origin + v * i)
 			end
 		end
 
-		for _, pos in scanPositions do
+		for _, pos in ipairs(scanPositions) do
 			local ray = workspace:Raycast(target, (pos - target), rayParams)
 
 			if not ray and #workspace:GetPartBoundsInBox(CFrame.new(pos), Vector3.one * 0.1, rayParams2) <= 0 then
@@ -142,8 +126,10 @@ run(function()
 
 	function OriginScanner:UpdateIgnore()
 		local ignore = {lplr.Character}
-		for _, v in entitylib.List do
-			table.insert(ignore, v.Character)
+		for _, v in ipairs(entitylib.List) do
+			if v.Character then
+				table.insert(ignore, v.Character)
+			end
 		end
 		rayParams.FilterDescendantsInstances = ignore
 		rayParams2.FilterDescendantsInstances = ignore
@@ -155,7 +141,7 @@ run(function()
 		if inputService.TouchEnabled then
 			return gameCamera.ViewportSize / 2
 		end
-		return inputService.GetMouseLocation(inputService)
+		return inputService:GetMouseLocation()
 	end
 
 	entitylib.getUpdateConnections = function(ent)
@@ -192,22 +178,24 @@ run(function()
 		if attackcheck and lplr.Team == teams.Guards and ent.Player.Team == teams.Inmates and not ent.Character:GetAttribute('Hostile') then
 			return false
 		end
-
-		return ent.Health > 0 and not ent.Character.FindFirstChildWhichIsA(ent.Character, 'ForceField') and (ent.Player.Team ~= teams.Inmates or (ent.Character:GetAttribute('Trespassing') or ent.Character:GetAttribute('Hostile')))
+		return ent.Health > 0 and not ent.Character:FindFirstChildWhichIsA('ForceField') and (ent.Player.Team ~= teams.Inmates or (ent.Character:GetAttribute('Trespassing') or ent.Character:GetAttribute('Hostile')))
 	end
 
 	entitylib.EntityMouse = function(entitysettings)
 		if entitylib.isAlive then
 			local mouseLocation, sortingTable = entitysettings.MouseOrigin or getMousePosition(), {}
 			local localPosition = entitysettings.Origin or entitylib.character.HumanoidRootPart.Position
-			for _, v in entitylib.List do
+			for _, v in ipairs(entitylib.List) do
 				if not entitysettings.Players and v.Player then continue end
 				if not entitysettings.NPCs and v.NPC then continue end
 				if not v.Targetable then continue end
-				local position, vis = gameCamera.WorldToViewportPoint(gameCamera, v[entitysettings.Part].Position)
+				if not v[entitysettings.Part] then continue end
+
+				local position, vis = gameCamera:WorldToViewportPoint(v[entitysettings.Part].Position)
 				if not vis then continue end
 				local mag = (mouseLocation - Vector2.new(position.x, position.y)).Magnitude
 				if mag > entitysettings.Range then continue end
+
 				if entitylib.isVulnerable(v, entitysettings.AttackCheck) then
 					if entitysettings.RangePosition then
 						local pmag = (v[entitysettings.Part].Position - localPosition).Magnitude
@@ -225,26 +213,25 @@ run(function()
 				return a.Magnitude < b.Magnitude
 			end)
 
-			for _, v in sortingTable do
+			for _, v in ipairs(sortingTable) do
 				if entitysettings.Wallcheck then
 					if entitylib.Wallcheck(entitysettings.Origin, v.Entity[entitysettings.Part].Position, entitysettings.Wallbang) then continue end
 				end
-				table.clear(entitysettings)
-				table.clear(sortingTable)
+				-- Removed table.clear(entitysettings) to prevent breaking loop logic
 				return v.Entity
 			end
-			table.clear(sortingTable)
 		end
-		table.clear(entitysettings)
 	end
 
 	entitylib.EntityPosition = function(entitysettings)
 		if entitylib.isAlive then
 			local localPosition, sortingTable = entitysettings.Origin or entitylib.character.HumanoidRootPart.Position, {}
-			for _, v in entitylib.List do
+			for _, v in ipairs(entitylib.List) do
 				if not entitysettings.Players and v.Player then continue end
 				if not entitysettings.NPCs and v.NPC then continue end
 				if not v.Targetable then continue end
+				if not v[entitysettings.Part] then continue end
+
 				local mag = (v[entitysettings.Part].Position - localPosition).Magnitude
 				if mag > entitysettings.Range then continue end
 				if entitylib.isVulnerable(v, entitysettings.AttackCheck) then
@@ -259,27 +246,25 @@ run(function()
 				return a.Magnitude < b.Magnitude
 			end)
 
-			for _, v in sortingTable do
+			for _, v in ipairs(sortingTable) do
 				if entitysettings.Wallcheck then
 					if entitylib.Wallcheck(localPosition, v.Entity[entitysettings.Part].Position, entitysettings.Wallbang) then continue end
 				end
-				table.clear(entitysettings)
-				table.clear(sortingTable)
 				return v.Entity
 			end
-			table.clear(sortingTable)
 		end
-		table.clear(entitysettings)
 	end
 
 	entitylib.AllPosition = function(entitysettings)
 		local returned = {}
 		if entitylib.isAlive then
 			local localPosition, sortingTable = entitysettings.Origin or entitylib.character.HumanoidRootPart.Position, {}
-			for _, v in entitylib.List do
+			for _, v in ipairs(entitylib.List) do
 				if not entitysettings.Players and v.Player then continue end
 				if not entitysettings.NPCs and v.NPC then continue end
 				if not v.Targetable then continue end
+				if not v[entitysettings.Part] then continue end
+
 				local mag = (v[entitysettings.Part].Position - localPosition).Magnitude
 				if mag > entitysettings.Range then continue end
 				if entitylib.isVulnerable(v, entitysettings.AttackCheck) then
@@ -291,16 +276,14 @@ run(function()
 				return a.Magnitude < b.Magnitude
 			end)
 
-			for _, v in sortingTable do
+			for _, v in ipairs(sortingTable) do
 				if entitysettings.Wallcheck then
 					if entitylib.Wallcheck(localPosition, v.Entity[entitysettings.Part].Position, entitysettings.Wallbang) then continue end
 				end
 				table.insert(returned, v.Entity)
 				if #returned >= (entitysettings.Limit or math.huge) then break end
 			end
-			table.clear(sortingTable)
 		end
-		table.clear(entitysettings)
 		return returned
 	end
 
@@ -319,11 +302,10 @@ run(function()
 	end
 
 	entitylib.Wallcheck = function(origin, position, checkpos)
-		local ray = workspace.Raycast(workspace, position, (origin - position), OriginScanner.Ray)
+		local ray = workspace:Raycast(position, (origin - position), OriginScanner.Ray)
 		if ray then
 			return not checkpos or not OriginScanner:Scan(checkpos, position, ray.Position + ray.Normal * 0.05)
 		end
-
 		return false
 	end
 end)
@@ -331,17 +313,18 @@ entitylib.start()
 
 run(function()
 	pl = {
-		GunTracers = require(replicatedStorage.SharedModules.GunTracers)
+		GunTracers = require(replicatedStorage:WaitForChild('SharedModules'):WaitForChild('GunTracers'))
 	}
 
 	local gui = lplr.PlayerGui:WaitForChild('Home', 10)
-	gui = gui and gui.hud.ActionArea
+	gui = gui and gui:FindFirstChild('hud') and gui.hud:FindFirstChild('ActionArea')
 	if vape.Loaded == nil then
 		return
 	end
 
 	local function getShootFunction()
-		for _, v in getconnections(gui.InputBegan) do
+		if not gui then return end
+		for _, v in ipairs(getconnections(gui.InputBegan)) do
 			if v.Function then
 				pl.Shoot = debug.getupvalue(v.Function, 2)
 				pl.Reload = debug.getupvalue(pl.Shoot, 2)
@@ -367,24 +350,30 @@ run(function()
 	local deaths = sessioninfo:AddItem('Deaths')
 	local arrests = sessioninfo:AddItem('Arrests')
 
-	vape:Clean(replicatedStorage.Killfeed.ChildAdded:Connect(function(obj)
+	vape:Clean(replicatedStorage:WaitForChild('Killfeed').ChildAdded:Connect(function(obj)
 		local names = {}
-
-		-- killer
 		local start = obj.Name:find('@')
 		local endchar = obj.Name:find(')')
-		table.insert(names, obj.Name:sub(start + 1, endchar - 1))
+		if start and endchar then
+			table.insert(names, obj.Name:sub(start + 1, endchar - 1))
+		end
 
-		-- victim
-		start = obj.Name:find('killed ') + 7
-		endchar = obj.Name:find(' ', start)
-		table.insert(names, obj.Name:sub(start, endchar - 1))
+		start = obj.Name:find('killed ') 
+		if start then
+			start = start + 7
+			endchar = obj.Name:find(' ', start)
+			if endchar then
+				table.insert(names, obj.Name:sub(start, endchar - 1))
+			end
+		end
 
-		vapeEvents.PlayerKill:Fire(unpack(names))
-		if names[1] == lplr.Name then
-			kills:Increment()
-		elseif names[2] == lplr.Name then
-			deaths:Increment()
+		if #names == 2 then
+			vapeEvents.PlayerKill:Fire(unpack(names))
+			if names[1] == lplr.Name then
+				kills:Increment()
+			elseif names[2] == lplr.Name then
+				deaths:Increment()
+			end
 		end
 	end))
 
@@ -399,7 +388,7 @@ run(function()
 	end))
 
 	OriginScanner:UpdateIgnore()
-	for _, v in {'EntityAdded', 'LocalAdded'} do
+	for _, v in ipairs({'EntityAdded', 'LocalAdded'}) do
 		vape:Clean(entitylib.Events[v]:Connect(function()
 			OriginScanner:UpdateIgnore()
 		end))
@@ -411,12 +400,10 @@ run(function()
 end)
 
 do
-	-- https://github.com/J1ck/roblox-spring/blob/main/src/roblox-spring.luau
 	Spring.__index = Spring
 
 	function Spring.new(Properties)
 		local TypeRefined = Properties or {}
-
 		local self = setmetatable({
 			Target = Vector3.new(),
 			Position = Vector3.new(),
@@ -427,7 +414,6 @@ do
 			Damping	= TypeRefined.Damping or 4,
 			Speed = TypeRefined.Speed or 4,
 		}, Spring)
-
 		return self
 	end
 
@@ -454,11 +440,10 @@ do
 
 	local function Hook(...)
 		if debug.info(3, 's') ~= 'ReplicatedStorage.Scripts.Replication.ClientReplicator' then
-			for _, v in TracerHook.Hooks do
+			for _, v in ipairs(TracerHook.Hooks) do
 				if v[2](...) then return end
 			end
 		end
-
 		return oldtracer(...)
 	end
 
@@ -476,24 +461,24 @@ do
 	end
 
 	function TracerHook:Remove(key)
-		for i, v in self.Hooks do
+		for i, v in ipairs(self.Hooks) do
 			if v[1] == key then
 				table.remove(self.Hooks, i)
 				break
 			end
 		end
 
-		if oldtracer and not next(self.Hooks) then
+		if oldtracer and #self.Hooks == 0 then
 			hookfunction(pl.GunTracers.createBullet, oldtracer)
 			oldtracer = nil
 		end
 	end
 end
 
-for _, v in {'Reach', 'Disabler', 'Jesus', 'MurderMystery'} do
+for _, v in ipairs({'Reach', 'Disabler', 'Jesus', 'MurderMystery'}) do
 	vape:Remove(v)
 end
-local mouseClicked
+
 run(function()
 	local SilentAim
 	local Target
@@ -514,12 +499,12 @@ run(function()
 	local rayParams2 = OverlapParams.new()
 	rayParams2.CollisionGroup = 'ClientBullet'
 	rayParams2.FilterType = Enum.RaycastFilterType.Exclude
-	local fireoffset, rand, delayCheck = CFrame.identity, Random.new(), tick()
+	local rand = Random.new()
 	local old
 
 	local function getTarget(origin, limit, attackcheck)
-		if rand.NextNumber(rand, 0, 100) > (AutoFire.Enabled and 100 or HitChance.Value) then return end
-		local targetPart = (rand.NextNumber(rand, 0, 100) < (AutoFire.Enabled and 100 or HeadshotChance.Value)) and 'Head' or 'RootPart'
+		if rand:NextNumber(0, 100) > (AutoFire.Enabled and 100 or HitChance.Value) then return end
+		local targetPart = (rand:NextNumber(0, 100) < (AutoFire.Enabled and 100 or HeadshotChance.Value)) and 'Head' or 'RootPart'
 		local ent = entitylib['Entity'..Mode.Value]({
 			Range = Mode.Value == 'Position' and math.min(Range.Value, limit) or Range.Value,
 			RangePosition = limit,
@@ -533,7 +518,7 @@ run(function()
 		})
 
 		if ent then
-			targetinfo.Targets[ent] = tick() + 1
+			targetinfo.Targets[ent] = os.clock() + 1
 		end
 
 		return ent, ent and ent[targetPart], origin
@@ -554,8 +539,8 @@ run(function()
 
 		if Wallbang.Enabled then
 			local ignore = {lplr.Character}
-			for _, v in entitylib.List do
-				table.insert(ignore, v.Character)
+			for _, v in ipairs(entitylib.List) do
+				if v.Character then table.insert(ignore, v.Character) end
 			end
 			rayParams.FilterDescendantsInstances = ignore
 			rayParams2.FilterDescendantsInstances = ignore
@@ -563,14 +548,12 @@ run(function()
 
 			if ray then
 				local neworigin = OriginScanner:Scan(entitylib.character.RootPart.Position, args[2], ray.Position + ray.Normal * 0.05)
-
 				if neworigin then
-					for i, v in debug.getstack(3) do
+					for i, v in ipairs(debug.getstack(3)) do
 						if v == origin then
 							debug.setstack(3, i, neworigin)
 						end
 					end
-
 					args[1] = neworigin
 				end
 			end
@@ -591,41 +574,46 @@ run(function()
 					return Hook(...)
 				end)
 
-				local autofiretimer = os.clock()
-				repeat
-					if CircleObject then
-						CircleObject.Position = inputService:GetMouseLocation()
-					end
+				task.spawn(function()
+					local autofiretimer = os.clock()
+					while SilentAim.Enabled do
+						if CircleObject then
+						  if inputService.TouchEnabled then
+						    CircleObject.Position = gameCamera.ViewportSize / 2
+						  else
+							  CircleObject.Position = inputService:GetMouseLocation()
+						  end
+						end
 
-					if AutoFire.Enabled and autofiretimer < os.clock() then
-						autofiretimer = os.clock() + (1 / AutoFireRate.Value)
+						if AutoFire.Enabled and autofiretimer < os.clock() then
+							autofiretimer = os.clock() + (1 / AutoFireRate.Value)
 
-						local tool = lplr.Character:FindFirstChildWhichIsA('Tool')
-						local gundata = debug.getupvalue(oldshoot or pl.Shoot, 10)
-						if gundata and tool and (tool:GetAttribute('Local_CurrentAmmo') or 0) > 0 and not tool:GetAttribute('Local_IsShooting') then
-							local limit = gundata.Range or 1000
-							local ent = entitylib['Entity'..Mode.Value]({
-								Range = Mode.Value == 'Position' and math.min(Range.Value, limit) or Range.Value,
-								RangePosition = limit,
-								AttackCheck = not gundata or gundata.Behavior ~= 'Taser',
-								Wallcheck = Target.Walls.Enabled and true or nil,
-								Wallbang = Wallbang.Enabled and entitylib.isAlive and entitylib.character.RootPart.Position or nil,
-								Part = 'Head',
-								Origin = entitylib.isAlive and entitylib.character.Head.Position or Vector3.zero,
-								Players = Target.Players.Enabled
-							})
+							local tool = lplr.Character:FindFirstChildWhichIsA('Tool')
+							local gundata = debug.getupvalue(oldshoot or pl.Shoot, 10)
+							if gundata and tool and (tool:GetAttribute('Local_CurrentAmmo') or 0) > 0 and not tool:GetAttribute('Local_IsShooting') then
+								local limit = gundata.Range or 1000
+								local ent = entitylib['Entity'..Mode.Value]({
+									Range = Mode.Value == 'Position' and math.min(Range.Value, limit) or Range.Value,
+									RangePosition = limit,
+									AttackCheck = not gundata or gundata.Behavior ~= 'Taser',
+									Wallcheck = Target.Walls.Enabled and true or nil,
+									Wallbang = Wallbang.Enabled and entitylib.isAlive and entitylib.character.RootPart.Position or nil,
+									Part = 'Head',
+									Origin = entitylib.isAlive and entitylib.character.Head.Position or Vector3.zero,
+									Players = Target.Players.Enabled
+								})
 
-							if ent and entitylib.character.Humanoid.Health > 0 then
-								autofiretimer = os.clock() + (gundata.FireRate or 1 / AutoFireRate.Value)
-								local obj = {UserInputState = Enum.UserInputState.Begin, UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.zero}
-								task.spawn(pl.Shoot, obj)
-								obj.UserInputState = Enum.UserInputState.End
+								if ent and entitylib.character.Humanoid.Health > 0 then
+									autofiretimer = os.clock() + (gundata.FireRate or 1 / AutoFireRate.Value)
+									local obj = {UserInputState = Enum.UserInputState.Begin, UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.zero}
+									task.spawn(pl.Shoot, obj)
+									obj.UserInputState = Enum.UserInputState.End
+								end
 							end
 						end
+						task.wait()
 					end
-
-					task.wait()
-				until not SilentAim.Enabled
+				end)
 			else
 				if old then
 					if restorefunction then
@@ -711,8 +699,11 @@ run(function()
 				CircleObject.Visible = SilentAim.Enabled and Mode.Value == 'Mouse'
 			else
 				pcall(function()
-					CircleObject.Visible = false
-					CircleObject:Remove()
+					if CircleObject then
+						CircleObject.Visible = false
+						CircleObject:Remove()
+						CircleObject = nil
+					end
 				end)
 			end
 			CircleColor.Object.Visible = callback
@@ -761,15 +752,13 @@ run(function()
 	
 	local function EntityAdded(ent)
 		local animator = ent.Humanoid:WaitForChild('Animator', 5)
-	
 		if animator and AntiInvisible.Enabled then
 			AntiInvisible:Clean(animator.AnimationPlayed:Connect(function(anim)
 				if anim.Animation.AnimationId:find('215384594') then
 					anim:AdjustWeight(0)
 				end
 			end))
-	
-			for _, anim in animator:GetPlayingAnimationTracks() do
+			for _, anim in ipairs(animator:GetPlayingAnimationTracks()) do
 				if anim.Animation.AnimationId:find('215384594') then
 					anim:AdjustWeight(0)
 				end
@@ -782,7 +771,7 @@ run(function()
 		Function = function(callback)
 			if callback then
 				AntiInvisible:Clean(entitylib.Events.EntityAdded:Connect(EntityAdded))
-				for _, v in entitylib.List do
+				for _, v in ipairs(entitylib.List) do
 					task.spawn(EntityAdded, v)
 				end
 			end
@@ -813,7 +802,7 @@ run(function()
 				end
 			end
 		end,
-		Tooltip = 'Add\'s a phyiscal part for the kill plane'
+		Tooltip = 'Adds a physical part for the kill plane'
 	})
 end)
 	
@@ -824,21 +813,26 @@ run(function()
 		Name = 'AntiRiotShield',
 		Function = function(callback)
 			if callback then
-				repeat
-					for _, ent in entitylib.List do
+				task.spawn(function()
+					while AntiRiotShield.Enabled do
+						for _, ent in ipairs(entitylib.List) do
+							if ent.Character then
+								local shield = ent.Character:FindFirstChild('RiotShieldPart')
+								if shield then
+									shield.CanQuery = false
+								end
+							end
+						end
+						task.wait(0.5) -- Increased wait time to prevent extreme lag
+					end
+				end)
+			else
+				for _, ent in ipairs(entitylib.List) do
+					if ent.Character then
 						local shield = ent.Character:FindFirstChild('RiotShieldPart')
 						if shield then
-							shield.CanQuery = false
+							shield.CanQuery = true
 						end
-					end
-	
-					task.wait(0.05)
-				until not AntiRiotShield.Enabled
-			else
-				for _, ent in entitylib.List do
-					local shield = ent.Character:FindFirstChild('RiotShieldPart')
-					if shield then
-						shield.CanQuery = true
 					end
 				end
 			end
@@ -852,12 +846,12 @@ run(function()
 	local old, connection
 	
 	local function EntityAdded(ent)
-		connection = getconnections(replicatedStorage.GunRemotes.PlayerTased.OnClientEvent)[1]
+		connection = getconnections(replicatedStorage:WaitForChild('GunRemotes'):WaitForChild('PlayerTased').OnClientEvent)[1]
 		if not (connection and connection.Function) then
 			repeat
 				connection = getconnections(replicatedStorage.GunRemotes.PlayerTased.OnClientEvent)[1]
 				task.wait()
-			until connection and connection.Function or not AntiTaze.Enabled
+			until (connection and connection.Function) or not AntiTaze.Enabled
 		end
 	
 		if connection and AntiTaze.Enabled then
@@ -885,7 +879,7 @@ run(function()
 					task.spawn(EntityAdded, entitylib.character)
 				end
 			else
-				if old and connection.Function then
+				if old and connection and connection.Function then
 					hookfunction(connection.Function, old)
 					old = nil
 				end
@@ -907,50 +901,50 @@ run(function()
 		Name = 'AutoArrest',
 		Function = function(callback)
 			if callback then
-				repeat
-					local check = cooldown < os.clock()
-					if HandCheck.Enabled then
-						local tool = entitylib.isAlive and lplr.Character:FindFirstChildWhichIsA('Tool')
-						check = check and tool and tool.Name == 'Handcuffs'
-					end
-	
-					if check then
-						local entities = entitylib.AllPosition({
-							Range = Range.Value,
-							Players = true,
-							Part = 'RootPart',
-							TargetCheck = true
-						})
-	
-						for _, ent in entities do
-							if not ent.Character:GetAttribute('Arrested') then
-								if ent.Player.Team == teams.Inmates and ent.Character:GetAttribute('Hostile') and not ent.Character:GetAttribute('Tased') then
-									continue
+				task.spawn(function()
+					while AutoArrest.Enabled do
+						local check = cooldown < os.clock()
+						if HandCheck.Enabled then
+							local tool = entitylib.isAlive and lplr.Character:FindFirstChildWhichIsA('Tool')
+							check = check and tool and tool.Name == 'Handcuffs'
+						end
+		
+						if check then
+							local entities = entitylib.AllPosition({
+								Range = Range.Value,
+								Players = true,
+								Part = 'RootPart',
+								TargetCheck = true
+							})
+		
+							for _, ent in ipairs(entities) do
+								if not ent.Character:GetAttribute('Arrested') then
+									if ent.Player.Team == teams.Inmates and ent.Character:GetAttribute('Hostile') and not ent.Character:GetAttribute('Tased') then
+										continue
+									end
+		
+									if replicatedStorage.Remotes.ArrestPlayer:InvokeServer(ent.Player, 1) then
+										cooldown = os.clock() + 7
+										vapeEvents.Arrested:Fire()
+										notif('AutoArrest', 'Arrested '..(ent.Player.Name), 7)
+									end
+									break
 								end
-	
-								if replicatedStorage.Remotes.ArrestPlayer:InvokeServer(ent.Player, 1) then
-									cooldown = os.clock() + 7
-									vapeEvents.Arrested:Fire()
-									notif('AutoArrest', 'Arrested '..(ent.Player.Name), 7)
-								end
-	
-								break
 							end
 						end
-					end
-	
-					if cdholder then
-						cdholder.Visible = cooldown > os.clock()
-	
-						if cdholder.Visible then
-							local diff = (cooldown - os.clock())
-							cdframe.Size = UDim2.new(math.clamp(diff / 7, 0, 1), -2, 1, -2)
-							cdlabel.Text = (math.round(diff * 10) / 10)..'s'
+		
+						if cdholder then
+							cdholder.Visible = cooldown > os.clock()
+							if cdholder.Visible then
+								local diff = (cooldown - os.clock())
+								cdframe.Size = UDim2.new(math.clamp(diff / 7, 0, 1), -2, 1, -2)
+								cdlabel.Text = (math.round(diff * 10) / 10)..'s'
+							end
 						end
+		
+						task.wait(0.05)
 					end
-	
-					task.wait(0.05)
-				until not AutoArrest.Enabled
+				end)
 			end
 		end,
 		Tooltip = 'Automatically uses handcuffs on nearby entities'
@@ -972,34 +966,38 @@ run(function()
 		Name = 'Cooldown Bar',
 		Function = function(callback)
 			if callback then
-				cdholder = Instance.new('Frame')
-				cdholder.BorderSizePixel = 0
-				cdholder.BackgroundTransparency = 0.7
-				cdholder.AnchorPoint = Vector2.new(0.5, 0)
-				cdholder.BackgroundColor3 = Color3.new(1, 1, 1)
-				cdholder.Size = UDim2.new(0.1, 0, 0, 5)
-				cdholder.Position = UDim2.fromScale(0.5, 0.55)
-				cdholder.Parent = vape.gui
-				cdframe = Instance.new('Frame')
-				cdframe.BorderSizePixel = 0
-				cdframe.BackgroundTransparency = 0.3
-				cdframe.BackgroundColor3 = Color3.new(1, 1, 1)
-				cdframe.Size = UDim2.new(1, -2, 1, -2)
-				cdframe.Position = UDim2.fromOffset(1, 1)
-				cdframe.Parent = cdholder
-				cdlabel = Instance.new('TextLabel')
-				cdlabel.Size = UDim2.new(1, 0, 0, 14)
-				cdlabel.Position = UDim2.fromOffset(0, 10)
-				cdlabel.BackgroundTransparency = 1
-				cdlabel.TextColor3 = Color3.new(1, 1, 1)
-				cdlabel.TextScaled = true
-				cdlabel.TextStrokeTransparency = 0
-				cdlabel.Font = Enum.Font.Arial
-				cdlabel.Parent = cdholder
+				if not cdholder then
+					cdholder = Instance.new('Frame')
+					cdholder.BorderSizePixel = 0
+					cdholder.BackgroundTransparency = 0.7
+					cdholder.AnchorPoint = Vector2.new(0.5, 0)
+					cdholder.BackgroundColor3 = Color3.new(1, 1, 1)
+					cdholder.Size = UDim2.new(0.1, 0, 0, 5)
+					cdholder.Position = UDim2.fromScale(0.5, 0.55)
+					cdholder.Parent = vape.gui
+					cdframe = Instance.new('Frame')
+					cdframe.BorderSizePixel = 0
+					cdframe.BackgroundTransparency = 0.3
+					cdframe.BackgroundColor3 = Color3.new(1, 1, 1)
+					cdframe.Size = UDim2.new(1, -2, 1, -2)
+					cdframe.Position = UDim2.fromOffset(1, 1)
+					cdframe.Parent = cdholder
+					cdlabel = Instance.new('TextLabel')
+					cdlabel.Size = UDim2.new(1, 0, 0, 14)
+					cdlabel.Position = UDim2.fromOffset(0, 10)
+					cdlabel.BackgroundTransparency = 1
+					cdlabel.TextColor3 = Color3.new(1, 1, 1)
+					cdlabel.TextScaled = true
+					cdlabel.TextStrokeTransparency = 0
+					cdlabel.Font = Enum.Font.Arial
+					cdlabel.Parent = cdholder
+				end
 			else
-				if cdframe then
-					cdframe:Destroy()
+				if cdholder then
+					cdholder:Destroy()
+					cdholder = nil
 					cdframe = nil
+					cdlabel = nil
 				end
 			end
 		end,
@@ -1030,33 +1028,36 @@ run(function()
 	local Spread
 	local FireRate
 	local Automatic
-	local olddata, old = {}
+	local olddata, old = {}, nil
 	
 	GunModifications = vape.Categories.Blatant:CreateModule({
 		Name = 'GunModifications',
 		Function = function(callback)
 			if callback then
-				repeat
-					local data = debug.getupvalue(oldshoot or pl.Shoot, 10)
-					if data then
-						if old ~= data then
-							olddata = table.clone(data)
-							old = data
+				task.spawn(function()
+					while GunModifications.Enabled do
+						local data = debug.getupvalue(oldshoot or pl.Shoot, 10)
+						if data then
+							if old ~= data then
+								olddata = table.clone(data)
+								old = data
+							end
+		
+							data.SpreadRadius = Spread.Enabled and 0 or olddata.SpreadRadius
+							data.FireRate = (olddata.FireRate or 0) * (FireRate.Value / 100)
+							data.AutoFire = Automatic.Enabled or olddata.AutoFire
 						end
-	
-						data.SpreadRadius = Spread.Enabled and 0 or olddata.SpreadRadius
-						data.FireRate = (olddata.FireRate or 0) * (FireRate.Value / 100)
-						data.AutoFire = Automatic.Enabled or olddata.AutoFire
+		
+						task.wait(0.016)
 					end
-	
-					task.wait(0.016)
-				until not GunModifications.Enabled
+				end)
 			else
 				if old then
-					for i, v in olddata do
+					for i, v in pairs(olddata) do
 						old[i] = v
 					end
 					table.clear(olddata)
+					old = nil
 				end
 			end
 		end,
@@ -1081,24 +1082,25 @@ run(function()
 		Name = 'Killaura',
 		Function = function(callback)
 			if callback then
-				repeat
-					local entities = entitylib.AllPosition({
-						Range = Range.Value,
-						Players = true,
-						Part = 'RootPart',
-						AttackCheck = true
-					})
-	
-					for _, ent in entities do
-						if lplr.Team == teams.Guards and ent.Player.Team == teams.Inmates and not ent.Character:GetAttribute('Hostile') then
-							continue
+				task.spawn(function()
+					while Killaura.Enabled do
+						local entities = entitylib.AllPosition({
+							Range = Range.Value,
+							Players = true,
+							Part = 'RootPart',
+							AttackCheck = true
+						})
+		
+						for _, ent in ipairs(entities) do
+							if lplr.Team == teams.Guards and ent.Player.Team == teams.Inmates and not ent.Character:GetAttribute('Hostile') then
+								continue
+							end
+							replicatedStorage.meleeEvent:FireServer(ent.Player, 1, 1)
 						end
-	
-						replicatedStorage.meleeEvent:FireServer(ent.Player, 1, 1)
+		
+						task.wait(0.05)
 					end
-	
-					task.wait(0.05)
-				until not Killaura.Enabled
+				end)
 			end
 		end,
 		Tooltip = 'Punch hostile enemies around you'
@@ -1199,7 +1201,7 @@ run(function()
 		Function = function(callback)
 			if callback then
 				up, down = 0, 0
-				for _, v in {'InputBegan', 'InputEnded'} do
+				for _, v in ipairs({'InputBegan', 'InputEnded'}) do
 					VehicleFly:Clean(inputService[v]:Connect(function(input)
 						if not inputService:GetFocusedTextBox() then
 							if input.KeyCode == Enum.KeyCode.E then
@@ -1219,17 +1221,18 @@ run(function()
 					part.Transparency = 1
 	
 					VehicleFly:Clean(part)
-					repeat
-						local seat = entitylib.isAlive and entitylib.character.Humanoid.SeatPart
-						if seat then
-							part.CFrame = CFrame.new(seat.Position - Vector3.new(0, 2.2 - (up + down), 0))
-							part.Parent = workspace
-						else
-							part.Parent = nil
+					task.spawn(function()
+						while VehicleFly.Enabled do
+							local seat = entitylib.isAlive and entitylib.character.Humanoid.SeatPart
+							if seat then
+								part.CFrame = CFrame.new(seat.Position - Vector3.new(0, 2.2 - (up + down), 0))
+								part.Parent = workspace
+							else
+								part.Parent = nil
+							end
+							task.wait(0.05)
 						end
-	
-						task.wait(0.05)
-					until not VehicleFly.Enabled
+					end)
 				else
 					local inCar = false
 					local old
@@ -1239,14 +1242,13 @@ run(function()
 	
 						if root then
 							if seat ~= old then
-								inCar = seat:IsDescendantOf(workspace.CarContainer) and seat:IsA('VehicleSeat')
+								inCar = seat:IsDescendantOf(workspace:FindFirstChild('CarContainer')) and seat:IsA('VehicleSeat')
 								if inCar then
 									welds = seat.Parent.Parent.Wheels:QueryDescendants('Rotate')
-									for _, v in welds do
+									for _, v in ipairs(welds) do
 										v.Enabled = false
 									end
 								end
-	
 								old = seat
 							end
 	
@@ -1256,7 +1258,7 @@ run(function()
 								gameCamera.CameraSubject = entitylib.character.Humanoid
 							end
 						elseif old then
-							for _, v in welds do
+							for _, v in ipairs(welds) do
 								v.Enabled = true
 							end
 							old = nil
@@ -1264,7 +1266,7 @@ run(function()
 					end))
 				end
 			else
-				for _, v in welds do
+				for _, v in ipairs(welds) do
 					v.Enabled = true
 				end
 				table.clear(welds)
@@ -1302,25 +1304,25 @@ run(function()
 		Name = 'VehicleSpeed',
 		Function = function(callback)
 			if callback then
-				repeat
-					local seat = entitylib.isAlive and entitylib.character.Humanoid.SeatPart
-					if seat then
-						if seat ~= old then
-							if seat:IsDescendantOf(workspace.CarContainer) then
-								seats = seat.Parent.Parent:QueryDescendants('VehicleSeat')
+				task.spawn(function()
+					while VehicleSpeed.Enabled do
+						local seat = entitylib.isAlive and entitylib.character.Humanoid.SeatPart
+						if seat then
+							if seat ~= old then
+								if seat:IsDescendantOf(workspace:FindFirstChild('CarContainer')) then
+									seats = seat.Parent.Parent:QueryDescendants('VehicleSeat')
+								end
+								old = seat
 							end
-	
-							old = seat
+		
+							for _, v in ipairs(seats) do
+								v.MaxSpeed = Speed.Value
+								v.Torque = 4
+							end
 						end
-	
-						for _, v in seats do
-							v.MaxSpeed = Speed.Value
-							v.Torque = 4
-						end
+						task.wait()
 					end
-	
-					task.wait()
-				until not VehicleSpeed.Enabled
+				end)
 			else
 				table.clear(seats)
 			end
@@ -1344,7 +1346,6 @@ run(function()
 			if not modified[part] then
 				modified[part] = part.CanQuery
 			end
-	
 			part.CanQuery = false
 		end
 	end
@@ -1353,12 +1354,15 @@ run(function()
 		Name = 'VehicleWallbang',
 		Function = function(callback)
 			if callback then
-				VehicleWallbang:Clean(workspace.CarContainer.DescendantAdded:Connect(Modify))
-				for _, part in workspace.CarContainer:QueryDescendants('BasePart') do
-					Modify(part)
+				local container = workspace:FindFirstChild('CarContainer')
+				if container then
+					VehicleWallbang:Clean(container.DescendantAdded:Connect(Modify))
+					for _, part in ipairs(container:QueryDescendants('BasePart')) do
+						Modify(part)
+					end
 				end
 			else
-				for i, v in modified do
+				for i, v in pairs(modified) do
 					i.CanQuery = v
 				end
 				table.clear(modified)
@@ -1396,7 +1400,6 @@ run(function()
 			if vape.ThreadFix then
 				setthreadidentity(8)
 			end
-	
 			Reference[obj]:Destroy()
 			Reference[obj] = nil
 		end
@@ -1409,11 +1412,11 @@ run(function()
 				C4ESP:Clean(collectionService:GetInstanceAddedSignal('C4'):Connect(Added))
 				C4ESP:Clean(collectionService:GetInstanceRemovedSignal('C4'):Connect(Removed))
 	
-				for _, obj in collectionService:GetTagged('C4') do
+				for _, obj in ipairs(collectionService:GetTagged('C4')) do
 					task.spawn(Added, obj)
 				end
 			else
-				for _, v in Reference do
+				for _, v in pairs(Reference) do
 					v:Destroy()
 				end
 				table.clear(Reference)
@@ -1424,7 +1427,7 @@ run(function()
 	FillColor = C4ESP:CreateColorSlider({
 		Name = 'Color',
 		Function = function(hue, sat, val)
-			for _, v in Reference do
+			for _, v in pairs(Reference) do
 				v.FillColor = Color3.fromHSV(hue, sat, val)
 			end
 		end
@@ -1433,7 +1436,7 @@ run(function()
 		Name = 'Outline Color',
 		DefaultSat = 0,
 		Function = function(hue, sat, val)
-			for _, v in Reference do
+			for _, v in pairs(Reference) do
 				v.OutlineColor = Color3.fromHSV(hue, sat, val)
 			end
 		end
@@ -1444,7 +1447,7 @@ run(function()
 		Max = 1,
 		Default = 0.5,
 		Function = function(val)
-			for _, v in Reference do
+			for _, v in pairs(Reference) do
 				v.FillTransparency = val
 			end
 		end,
@@ -1456,7 +1459,7 @@ run(function()
 		Max = 1,
 		Default = 0.5,
 		Function = function(val)
-			for _, v in Reference do
+			for _, v in pairs(Reference) do
 				v.OutlineTransparency = val
 			end
 		end,
@@ -1472,7 +1475,7 @@ run(function()
 		Name = 'CameraPhase',
 		Function = function(callback)
 			if callback then
-				local req = require(lplr.PlayerScripts.PlayerModule.CameraModule.ZoomController.Popper)
+				local req = require(lplr.PlayerScripts:WaitForChild('PlayerModule'):WaitForChild('CameraModule'):WaitForChild('ZoomController'):WaitForChild('Popper'))
 				old = debug.getupvalue(debug.getupvalue(req, 3), 7)
 				debug.setconstant(old, 16, 0)
 			else
@@ -1545,9 +1548,9 @@ run(function()
 	
 			if ent.Player and ent.Player.Team == teams.Inmates then
 				if ent.Character:GetAttribute('Hostile') then
-					Strings[ent] = '[💢] '..Strings[ent]
+					Strings[ent] = '[Hostile] '..Strings[ent]
 				elseif ent.Character:GetAttribute('Trespassing') then
-					Strings[ent] = '[🔗] '..Strings[ent]
+					Strings[ent] = '[Trespass] '..Strings[ent]
 				end
 			end
 	
@@ -1597,7 +1600,7 @@ run(function()
 				if ent.Character:GetAttribute('Hostile') then
 					Strings[ent] = '[Hostile] '..Strings[ent]
 				elseif ent.Character:GetAttribute('Trespassing') then
-					Strings[ent] = '[Tresspass] '..Strings[ent]
+					Strings[ent] = '[Trespass] '..Strings[ent]
 				end
 			end
 	
@@ -1630,7 +1633,7 @@ run(function()
 				Reference[ent] = nil
 				Strings[ent] = nil
 				Sizes[ent] = nil
-				for _, obj in v do
+				for _, obj in pairs(v) do
 					pcall(function()
 						obj.Visible = false
 						obj:Remove()
@@ -1661,9 +1664,9 @@ run(function()
 	
 				if ent.Player and ent.Player.Team == teams.Inmates then
 					if ent.Character:GetAttribute('Hostile') then
-						Strings[ent] = '[💢] '..Strings[ent]
+						Strings[ent] = '[Hostile] '..Strings[ent]
 					elseif ent.Character:GetAttribute('Trespassing') then
-						Strings[ent] = '[🔗] '..Strings[ent]
+						Strings[ent] = '[Trespass] '..Strings[ent]
 					end
 				end
 	
@@ -1689,7 +1692,7 @@ run(function()
 					if ent.Character:GetAttribute('Hostile') then
 						Strings[ent] = '[Hostile] '..Strings[ent]
 					elseif ent.Character:GetAttribute('Trespassing') then
-						Strings[ent] = '[Tresspass] '..Strings[ent]
+						Strings[ent] = '[Trespass] '..Strings[ent]
 					end
 				end
 	
@@ -1709,13 +1712,13 @@ run(function()
 	local ColorFunc = {
 		Normal = function(hue, sat, val)
 			local color = Color3.fromHSV(hue, sat, val)
-			for i, v in Reference do
+			for i, v in pairs(Reference) do
 				v.TextColor3 = entitylib.getEntityColor(i) or color
 			end
 		end,
 		Drawing = function(hue, sat, val)
 			local color = Color3.fromHSV(hue, sat, val)
-			for i, v in Reference do
+			for i, v in pairs(Reference) do
 				v.Text.Color = entitylib.getEntityColor(i) or color
 			end
 		end
@@ -1723,7 +1726,7 @@ run(function()
 	
 	local Loop = {
 		Normal = function()
-			for ent, nametag in Reference do
+			for ent, nametag in pairs(Reference) do
 				if DistanceCheck.Enabled then
 					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
@@ -1734,9 +1737,7 @@ run(function()
 	
 				local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
 				nametag.Visible = headVis
-				if not headVis then
-					continue
-				end
+				if not headVis then continue end
 	
 				if Distance.Enabled then
 					local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude) or 0
@@ -1751,7 +1752,7 @@ run(function()
 			end
 		end,
 		Drawing = function()
-			for ent, nametag in Reference do
+			for ent, nametag in pairs(Reference) do
 				if DistanceCheck.Enabled then
 					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
@@ -1764,9 +1765,7 @@ run(function()
 				local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
 				nametag.Text.Visible = headVis
 				nametag.BG.Visible = headVis
-				if not headVis then
-					continue
-				end
+				if not headVis then continue end
 	
 				if Distance.Enabled then
 					local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude) or 0
@@ -1791,7 +1790,7 @@ run(function()
 					NameTags:Clean(entitylib.Events.EntityRemoved:Connect(Removed[methodused]))
 				end
 				if Added[methodused] then
-					for _, v in entitylib.List do
+					for _, v in ipairs(entitylib.List) do
 						if Reference[v] then
 							Removed[methodused](v)
 						end
@@ -1806,7 +1805,7 @@ run(function()
 				end
 				if Updated[methodused] then
 					NameTags:Clean(entitylib.Events.EntityUpdated:Connect(Updated[methodused]))
-					for _, v in entitylib.List do
+					for _, v in ipairs(entitylib.List) do
 						Updated[methodused](v)
 					end
 				end
@@ -1820,7 +1819,7 @@ run(function()
 				end
 			else
 				if Removed[methodused] then
-					for i in Reference do
+					for i in pairs(Reference) do
 						Removed[methodused](i)
 					end
 				end
@@ -1964,59 +1963,60 @@ run(function()
 					end
 				end))
 	
-				for _, obj in collectionService:GetTagged('C4') do
+				for _, obj in ipairs(collectionService:GetTagged('C4')) do
 					if obj:GetAttribute('UserId') == lplr.UserId then
 						localc4 = obj
 					end
 				end
 	
-				repeat
-					local backpack = lplr:FindFirstChildWhichIsA('Backpack')
-	
-					if backpack and localc4 then
-						local tool = backpack:FindFirstChild('C4 Explosive')
-	
-						if tool then
-							local ent = entitylib.EntityPosition({
-								Players = true,
-								Part = 'RootPart',
-								Range = 25,
-								Origin = localc4.Position
-							})
-	
-							if ent then
-								rayParams.FilterDescendantsInstances = {ent.Character, lplr.Character, localc4}
-	
-								local ray = workspace:Raycast(localc4.Position, (ent.RootPart.Position - localc4.Position), rayParams)
-								if not ray then
-									ticks += 1
-									if ticks > 3 then
-										local equipped = lplr.Character:FindFirstChildWhichIsA('Tool')
-										if equipped then
-											equipped.Parent = backpack
+				task.spawn(function()
+					while AutoDetonate.Enabled do
+						local backpack = lplr:FindFirstChildWhichIsA('Backpack')
+		
+						if backpack and localc4 then
+							local tool = backpack:FindFirstChild('C4 Explosive')
+		
+							if tool then
+								local ent = entitylib.EntityPosition({
+									Players = true,
+									Part = 'RootPart',
+									Range = 25,
+									Origin = localc4.Position
+								})
+		
+								if ent then
+									rayParams.FilterDescendantsInstances = {ent.Character, lplr.Character, localc4}
+		
+									local ray = workspace:Raycast(localc4.Position, (ent.RootPart.Position - localc4.Position), rayParams)
+									if not ray then
+										ticks += 1
+										if ticks > 3 then
+											local equipped = lplr.Character:FindFirstChildWhichIsA('Tool')
+											if equipped then
+												equipped.Parent = backpack
+											end
+		
+											tool.Parent = lplr.Character
+											task.spawn(function()
+												replicatedStorage.Remotes.C4.ActivateC4:InvokeServer()
+											end)
+											tool.Parent = backpack
+		
+											if equipped then
+												equipped.Parent = lplr.Character
+											end
 										end
-	
-										tool.Parent = lplr.Character
-										task.spawn(function()
-											replicatedStorage.Remotes.C4.ActivateC4:InvokeServer()
-										end)
-										tool.Parent = backpack
-	
-										if equipped then
-											equipped.Parent = lplr.Character
-										end
+										task.wait(0.05)
+										continue
 									end
-	
-									task.wait(0.05)
-									continue
 								end
 							end
 						end
+		
+						ticks = 0
+						task.wait(0.05)
 					end
-	
-					ticks = 0
-					task.wait(0.05)
-				until not AutoDetonate.Enabled
+				end)
 			end
 		end,
 		Tooltip = 'Automatically detonate when enemies are nearby.'
@@ -2035,40 +2035,41 @@ run(function()
 		Name = 'AutoHeal',
 		Function = function(callback)
 			if callback then
-				repeat
-					local ent = entitylib.isAlive and entitylib.character
-					if ent and ent.Humanoid.Health <= 85 then
-						local healTool
-						local backpack = lplr:FindFirstChildWhichIsA('Backpack')
-						if backpack then
-							for _, v in backpack:GetChildren() do
-								if healItems[v.Name] then
-									healTool = v
+				task.spawn(function()
+					while AutoHeal.Enabled do
+						local ent = entitylib.isAlive and entitylib.character
+						if ent and ent.Humanoid.Health <= 85 then
+							local healTool
+							local backpack = lplr:FindFirstChildWhichIsA('Backpack')
+							if backpack then
+								for _, v in ipairs(backpack:GetChildren()) do
+									if healItems[v.Name] then
+										healTool = v
+									end
 								end
-							end
-	
-							if healTool and (os.clock() - (healTool:GetAttribute('Client_LastConsumedAt') or 0)) >= 3 then
-								local equipped = ent.Character:FindFirstChildWhichIsA('Tool')
-								if equipped then
-									equipped.Parent = backpack
-								end
-	
-								healTool.Parent = ent.Character
-								healTool:SetAttribute('Quantity', healTool:GetAttribute('Quantity') - 1)
-								healTool:SetAttribute('Client_LastConsumedAt', os.clock())
-								notif('AutoHeal', 'Quantity: '..healTool:GetAttribute('Quantity'), 3)
-								replicatedStorage.Remotes.EatFood:FireServer()
-								healTool.Parent = backpack
-	
-								if equipped then
-									equipped.Parent = ent.Character
+		
+								if healTool and (os.clock() - (healTool:GetAttribute('Client_LastConsumedAt') or 0)) >= 3 then
+									local equipped = ent.Character:FindFirstChildWhichIsA('Tool')
+									if equipped then
+										equipped.Parent = backpack
+									end
+		
+									healTool.Parent = ent.Character
+									healTool:SetAttribute('Quantity', healTool:GetAttribute('Quantity') - 1)
+									healTool:SetAttribute('Client_LastConsumedAt', os.clock())
+									notif('AutoHeal', 'Quantity: '..healTool:GetAttribute('Quantity'), 3)
+									replicatedStorage.Remotes.EatFood:FireServer()
+									healTool.Parent = backpack
+		
+									if equipped then
+										equipped.Parent = ent.Character
+									end
 								end
 							end
 						end
+						task.wait(0.05)
 					end
-	
-					task.wait(0.05)
-				until not AutoHeal.Enabled
+				end)
 			end
 		end,
 		Tooltip = 'Automatically heal damage with consumables.'
@@ -2089,7 +2090,7 @@ run(function()
 		Name = 'AutoPickup',
 		Function = function(callback)
 			if callback then
-				for _, obj in workspace:GetChildren() do
+				for _, obj in ipairs(workspace:GetChildren()) do
 					task.spawn(AddPickup, obj)
 				end
 	
@@ -2101,24 +2102,25 @@ run(function()
 					end
 				end))
 	
-				repeat
-					if entitylib.isAlive then
-						local localpos = entitylib.character.RootPart.Position
-						local backpack = lplr:FindFirstChildWhichIsA('Backpack')
-	
-						if backpack then
-							for _, v in items do
-								if v.PrimaryPart and (v.PrimaryPart.Position - localpos).Magnitude < 12 then
-									if not backpack:FindFirstChild(v:GetAttribute('ToolName')) then
-										replicatedStorage.Remotes.GiverPressed:FireServer(v)
+				task.spawn(function()
+					while AutoPickup.Enabled do
+						if entitylib.isAlive then
+							local localpos = entitylib.character.RootPart.Position
+							local backpack = lplr:FindFirstChildWhichIsA('Backpack')
+		
+							if backpack then
+								for _, v in ipairs(items) do
+									if v.PrimaryPart and (v.PrimaryPart.Position - localpos).Magnitude < 12 then
+										if not backpack:FindFirstChild(v:GetAttribute('ToolName')) then
+											replicatedStorage.Remotes.GiverPressed:FireServer(v)
+										end
 									end
 								end
 							end
 						end
+						task.wait(0.1)
 					end
-	
-					task.wait(0.1)
-				until not AutoPickup.Enabled
+				end)
 			else
 				table.clear(items)
 			end
@@ -2144,7 +2146,7 @@ run(function()
 		local items = {}
 		local backpack = lplr:FindFirstChildWhichIsA('Backpack')
 		if backpack then
-			for _, tool in backpack:GetChildren() do
+			for _, tool in ipairs(backpack:GetChildren()) do
 				if tool:GetAttribute('FireRate') and (tool:GetAttribute('Local_ReloadSession') or 0) <= 0 and tool.Name ~= 'Taser' and tool.Name ~= 'M700' then
 					table.insert(items, tool)
 				end
@@ -2170,14 +2172,12 @@ run(function()
 	
 						if HotSwap.Enabled then
 							local wep = getWeapon()
-	
 							if wep then
 								tool.Parent = lplr.Backpack
 								wep.Parent = lplr.Character
 							end
 						end
 					end
-	
 					return unpack(args, 1, args.n)
 				end)
 			else
@@ -2252,13 +2252,12 @@ run(function()
 	
 						task.delay(Lifetime.Value, obj.Destroy, obj)
 					end
-	
 					return true
 				end, 1)
 	
 				if DrawingToggle.Enabled then
 					BulletTracers:Clean(runService.RenderStepped:Connect(function()
-						for obj, data in drawingobjs do
+						for obj, data in pairs(drawingobjs) do
 							local from, vis = gameCamera:WorldToViewportPoint(data[1])
 							local to, vis2 = gameCamera:WorldToViewportPoint(data[2])
 							if vis and vis2 then
@@ -2281,7 +2280,7 @@ run(function()
 		Tooltip = 'Allow you to customize bullet tracers.'
 	})
 	local materials = {'SmoothPlastic'}
-	for _, v in Enum.Material:GetEnumItems() do
+	for _, v in ipairs(Enum.Material:GetEnumItems()) do
 		if v.Name ~= 'SmoothPlastic' then
 			table.insert(materials, v.Name)
 		end
@@ -2325,7 +2324,7 @@ run(function()
 		Name = 'Crosshair',
 		Function = function(callback)
 			if callback then
-				for _, v in getconnections(lplr.CharacterAdded) do
+				for _, v in ipairs(getconnections(lplr.CharacterAdded)) do
 					if v.Function and debug.info(v.Function, 's'):find('GunController') then
 						old = v.Function
 						break
@@ -2394,8 +2393,10 @@ run(function()
 		end
 	
 		indithread = task.delay(1, function()
-			indipart:Destroy()
-			indipart = nil
+			if indipart then
+				indipart:Destroy()
+				indipart = nil
+			end
 			indithread = nil
 		end)
 	end
@@ -2407,7 +2408,7 @@ run(function()
 				TracerHook:Add('DamageIndicator', function(...)
 					local part = debug.getstack(4, 17)
 					if typeof(part) == 'Instance' then
-						for _, v in entitylib.List do
+						for _, v in ipairs(entitylib.List) do
 							if part:IsDescendantOf(v.Character) and entitylib.isVulnerable(v, true) then
 								if ttimer <= os.clock() or v ~= tent then
 									thealth = v.Health
@@ -2427,7 +2428,6 @@ run(function()
 							if indi then
 								indi.Text = '0'
 							end
-	
 							lent = ent
 						end
 	
@@ -2444,7 +2444,7 @@ run(function()
 		Tooltip = 'Add custom damage indicators for gun damage.'
 	})
 	local fontitems = {'GothamBlack'}
-	for _, v in Enum.Font:GetEnumItems() do
+	for _, v in ipairs(Enum.Font:GetEnumItems()) do
 		if v.Name ~= 'GothamBlack' then
 			table.insert(fontitems, v.Name)
 		end
@@ -2463,7 +2463,7 @@ run(function()
 		DefaultHue = 0,
 		Function = function(hue, sat, val)
 			if indi then
-				indi.Color = Color3.fromHSV(hue, sat, val)
+				indi.TextColor3 = Color3.fromHSV(hue, sat, val)
 			end
 		end
 	})
@@ -2482,7 +2482,7 @@ run(function()
 				TracerHook:Add('HitSound', function(...)
 					local part = debug.getstack(4, 17)
 					if typeof(part) == 'Instance' then
-						for _, v in entitylib.List do
+						for _, v in ipairs(entitylib.List) do
 							if part:IsDescendantOf(v.Character) and entitylib.isVulnerable(v, true) then
 								if #sounds > 0 then
 									local obj = Instance.new('Sound')
@@ -2492,7 +2492,6 @@ run(function()
 									obj.Parent = workspace
 									obj:Destroy()
 								end
-	
 								break
 							end
 						end
@@ -2509,7 +2508,7 @@ run(function()
 		Placeholder = 'sound id (roblox or file path)',
 		Function = function(list)
 			table.clear(sounds)
-			for i, v in list or {} do
+			for i, v in pairs(list or {}) do
 				sounds[i] = v:find('rbxasset') and v or isfile(v) and getcustomasset(v) or nil
 			end
 		end
@@ -2552,7 +2551,7 @@ run(function()
 		Placeholder = 'sound id (roblox or file path)',
 		Function = function(list)
 			table.clear(sounds)
-			for i, v in list or {} do
+			for i, v in pairs(list or {}) do
 				sounds[i] = v:find('rbxasset') and v or isfile(v) and getcustomasset(v) or nil
 			end
 		end
@@ -2579,7 +2578,7 @@ run(function()
 	local function ToolAdded(obj)
 		if obj and obj:IsA('Tool') then
 			if old then
-				for _, v in old:QueryDescendants('BasePart, Texture, Decal') do
+				for _, v in ipairs(old:QueryDescendants('BasePart, Texture, Decal')) do
 					v.LocalTransparencyModifier = 0
 				end
 			end
@@ -2593,12 +2592,12 @@ run(function()
 			handle = vtool:FindFirstChild('Handle')
 			vtool.Parent = gameCamera
 	
-			for _, v in vtool:QueryDescendants('BasePart') do
+			for _, v in ipairs(vtool:QueryDescendants('BasePart')) do
 				v.Material = ForceField.Enabled and Enum.Material.ForceField or v.Material
 				v.Color = ForceField.Enabled and Color3.fromHSV(ColorSl.Hue, ColorSl.Sat, ColorSl.Value) or v.Color
 			end
 	
-			for _, v in old:QueryDescendants('BasePart, Texture, Decal') do
+			for _, v in ipairs(old:QueryDescendants('BasePart, Texture, Decal')) do
 				v.LocalTransparencyModifier = 1
 			end
 		end
@@ -2619,7 +2618,7 @@ run(function()
 					vtool = nil
 				end
 	
-				for _, v in old:QueryDescendants('BasePart, Texture, Decal') do
+				for _, v in ipairs(old:QueryDescendants('BasePart, Texture, Decal')) do
 					v.LocalTransparencyModifier = 0
 				end
 	
@@ -2643,7 +2642,7 @@ run(function()
 					if handle then
 						moveSpring.Target = entitylib.isAlive and entitylib.character.RootPart.AssemblyLinearVelocity * 0.005 or Vector3.zero
 						if moveSpring.Target.Magnitude > 0.1 and Sway.Enabled then
-							moveSpring.Target += (gameCamera.CFrame * CFrame.new(math.sin(tick() * 10) * 0.06, 0, 0)).Position - gameCamera.CFrame.Position
+							moveSpring.Target += (gameCamera.CFrame * CFrame.new(math.sin(os.clock() * 10) * 0.06, 0, 0)).Position - gameCamera.CFrame.Position
 						end
 	
 						local cf = (gameCamera.CFrame * CFrame.new(2, -1.5, -3)) + moveSpring:Update(dt)
@@ -2654,7 +2653,7 @@ run(function()
 				end))
 			else
 				if old then
-					for _, v in old:QueryDescendants('BasePart, Texture, Decal') do
+					for _, v in ipairs(old:QueryDescendants('BasePart, Texture, Decal')) do
 						v.LocalTransparencyModifier = 0
 					end
 					old = nil
@@ -2687,7 +2686,7 @@ run(function()
 		Name = 'Color',
 		Function = function(hue, sat, val)
 			if vtool then
-				for _, v in vtool:QueryDescendants('BasePart') do
+				for _, v in ipairs(vtool:QueryDescendants('BasePart')) do
 					v.Color = Color3.fromHSV(hue, sat, val)
 				end
 			end
@@ -2695,4 +2694,3 @@ run(function()
 		Visible = false
 	})
 end)
-	
