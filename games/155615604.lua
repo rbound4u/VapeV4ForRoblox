@@ -1,4 +1,4 @@
--- Prison Life
+-- Prison Life Fixed
 local run = function(func)
 	func()
 end
@@ -23,7 +23,6 @@ local guiService = cloneref(game:GetService('GuiService'))
 local teams = cloneref(game:GetService('Teams'))
 local coreGui = cloneref(game:GetService('CoreGui'))
 
-local gameCamera = workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
 local vape = shared.vape
 local entitylib = vape.Libraries.entity
@@ -139,7 +138,9 @@ end)
 run(function()
 	local function getMousePosition()
 		if inputService.TouchEnabled then
-			return gameCamera.ViewportSize / 2
+			local viewportSize = workspace.CurrentCamera.ViewportSize
+			local inset = guiService:GetGuiInset()
+			return Vector2.new(viewportSize.X / 2, (viewportSize.Y / 2) + inset.Y)
 		end
 		return inputService:GetMouseLocation()
 	end
@@ -191,7 +192,7 @@ run(function()
 				if not v.Targetable then continue end
 				if not v[entitysettings.Part] then continue end
 
-				local position, vis = gameCamera:WorldToViewportPoint(v[entitysettings.Part].Position)
+				local position, vis = workspace.CurrentCamera:WorldToViewportPoint(v[entitysettings.Part].Position)
 				if not vis then continue end
 				local mag = (mouseLocation - Vector2.new(position.x, position.y)).Magnitude
 				if mag > entitysettings.Range then continue end
@@ -217,7 +218,6 @@ run(function()
 				if entitysettings.Wallcheck then
 					if entitylib.Wallcheck(entitysettings.Origin, v.Entity[entitysettings.Part].Position, entitysettings.Wallbang) then continue end
 				end
-				-- Removed table.clear(entitysettings) to prevent breaking loop logic
 				return v.Entity
 			end
 		end
@@ -578,11 +578,13 @@ run(function()
 					local autofiretimer = os.clock()
 					while SilentAim.Enabled do
 						if CircleObject then
-						  if inputService.TouchEnabled then
-						    CircleObject.Position = gameCamera.ViewportSize / 2
-						  else
-							  CircleObject.Position = inputService:GetMouseLocation()
-						  end
+							if inputService.TouchEnabled then
+								local viewportSize = workspace.CurrentCamera.ViewportSize
+								local inset = guiService:GetGuiInset()
+								CircleObject.Position = Vector2.new(viewportSize.X / 2, (viewportSize.Y / 2) + inset.Y)
+							else
+								CircleObject.Position = inputService:GetMouseLocation()
+							end
 						end
 
 						if AutoFire.Enabled and autofiretimer < os.clock() then
@@ -692,7 +694,9 @@ run(function()
 				CircleObject = Drawing.new('Circle')
 				CircleObject.Filled = CircleFilled.Enabled
 				CircleObject.Color = Color3.fromHSV(CircleColor.Hue, CircleColor.Sat, CircleColor.Value)
-				CircleObject.Position = vape.gui.AbsoluteSize / 2
+				local viewportSize = workspace.CurrentCamera.ViewportSize
+				local inset = guiService:GetGuiInset()
+				CircleObject.Position = inputService.TouchEnabled and Vector2.new(viewportSize.X / 2, (viewportSize.Y / 2) + inset.Y) or inputService:GetMouseLocation()
 				CircleObject.Radius = Range.Value
 				CircleObject.NumSides = 100
 				CircleObject.Transparency = 1 - CircleTransparency.Value
@@ -823,7 +827,7 @@ run(function()
 								end
 							end
 						end
-						task.wait(0.5) -- Increased wait time to prevent extreme lag
+						task.wait(0.5)
 					end
 				end)
 			else
@@ -1254,8 +1258,8 @@ run(function()
 	
 							if inCar then
 								root.AssemblyLinearVelocity = Vector3.new(0, 2.25, 0)
-								root.CFrame = CFrame.lookAlong(root.Position, gameCamera.CFrame.LookVector) + (entitylib.character.Humanoid.MoveDirection + Vector3.new(0, up + down, 0)) * Speed.Value * dt
-								gameCamera.CameraSubject = entitylib.character.Humanoid
+								root.CFrame = CFrame.lookAlong(root.Position, workspace.CurrentCamera.CFrame.LookVector) + (entitylib.character.Humanoid.MoveDirection + Vector3.new(0, up + down, 0)) * Speed.Value * dt
+								workspace.CurrentCamera.CameraSubject = entitylib.character.Humanoid
 							end
 						elseif old then
 							for _, v in ipairs(welds) do
@@ -1735,7 +1739,7 @@ run(function()
 					end
 				end
 	
-				local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
+				local headPos, headVis = workspace.CurrentCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
 				nametag.Visible = headVis
 				if not headVis then continue end
 	
@@ -1762,7 +1766,7 @@ run(function()
 					end
 				end
 	
-				local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
+				local headPos, headVis = workspace.CurrentCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
 				nametag.Text.Visible = headVis
 				nametag.BG.Visible = headVis
 				if not headVis then continue end
@@ -2258,8 +2262,8 @@ run(function()
 				if DrawingToggle.Enabled then
 					BulletTracers:Clean(runService.RenderStepped:Connect(function()
 						for obj, data in pairs(drawingobjs) do
-							local from, vis = gameCamera:WorldToViewportPoint(data[1])
-							local to, vis2 = gameCamera:WorldToViewportPoint(data[2])
+							local from, vis = workspace.CurrentCamera:WorldToViewportPoint(data[1])
+							local to, vis2 = workspace.CurrentCamera:WorldToViewportPoint(data[2])
 							if vis and vis2 then
 								obj.Visible = true
 								obj.From = Vector2.new(from.X, from.Y)
@@ -2590,7 +2594,7 @@ run(function()
 			old = obj
 			vtool = obj:Clone()
 			handle = vtool:FindFirstChild('Handle')
-			vtool.Parent = gameCamera
+			vtool.Parent = workspace.CurrentCamera
 	
 			for _, v in ipairs(vtool:QueryDescendants('BasePart')) do
 				v.Material = ForceField.Enabled and Enum.Material.ForceField or v.Material
@@ -2642,11 +2646,11 @@ run(function()
 					if handle then
 						moveSpring.Target = entitylib.isAlive and entitylib.character.RootPart.AssemblyLinearVelocity * 0.005 or Vector3.zero
 						if moveSpring.Target.Magnitude > 0.1 and Sway.Enabled then
-							moveSpring.Target += (gameCamera.CFrame * CFrame.new(math.sin(os.clock() * 10) * 0.06, 0, 0)).Position - gameCamera.CFrame.Position
+							moveSpring.Target += (workspace.CurrentCamera.CFrame * CFrame.new(math.sin(os.clock() * 10) * 0.06, 0, 0)).Position - workspace.CurrentCamera.CFrame.Position
 						end
 	
-						local cf = (gameCamera.CFrame * CFrame.new(2, -1.5, -3)) + moveSpring:Update(dt)
-						aimSpring.Target = aimTimer > os.clock() and CFrame.lookAt(cf.Position, aimVec).LookVector or gameCamera.CFrame.LookVector
+						local cf = (workspace.CurrentCamera.CFrame * CFrame.new(2, -1.5, -3)) + moveSpring:Update(dt)
+						aimSpring.Target = aimTimer > os.clock() and CFrame.lookAt(cf.Position, aimVec).LookVector or workspace.CurrentCamera.CFrame.LookVector
 						handle.CFrame = CFrame.lookAlong(cf.Position, aimSpring:Update(dt)) * CFrame.new(0, 0, math.max(shootTimer - os.clock(), 0))
 						handle.AssemblyLinearVelocity = Vector3.zero
 					end
